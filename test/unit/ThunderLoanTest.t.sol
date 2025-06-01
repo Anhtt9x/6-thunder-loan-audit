@@ -11,6 +11,8 @@ import { BuffMockPoolFactory } from "../mocks/BuffMockPoolFactory.sol";
 import {BuffMockTSwap} from "../mocks/BuffMockTSwap.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFlashLoanReceiver } from "../../src/interfaces/IFlashLoanReceiver.sol";
+import { ThunderLoanUpgraded } from "src/upgradedProtocol/ThunderLoanUpgraded.sol";
+
 
 contract ThunderLoanTest is BaseTest {
     uint256 constant AMOUNT = 10e18;
@@ -165,6 +167,18 @@ contract ThunderLoanTest is BaseTest {
         assert(tokenA.balanceOf(address(depositOverRepay)) > 50e18 + fee);
     }
 
+    function testUpgradeBreaks() public {
+        uint256 feeBeforeUpgrade = thunderLoan.getFee();
+        vm.startPrank(thunderLoan.owner());
+        ThunderLoanUpgraded upgrade = new ThunderLoanUpgraded();
+        thunderLoan.upgradeToAndCall(address(upgrade), "");
+        uint256 feeAfterUpgrade = thunderLoan.getFee();
+        vm.stopPrank();
+
+        console2.log("Fee before upgrade:", feeBeforeUpgrade);
+        console2.log("Fee after upgrade:", feeAfterUpgrade);
+        assert(feeAfterUpgrade > feeBeforeUpgrade);
+    }
 }
 
 contract DepositOverRepay is IFlashLoanReceiver {
